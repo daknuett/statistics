@@ -15,6 +15,7 @@ def fit(f, t, values, stds, p0, data=None, statistic=None
     If ``data is not None and statistic is not None`` the error is estimated using ``jackknife_method``.
     Else the error is estimated using some error propagation.
 
+    Returns (p:array_like, p_std:array_like, f_std:array_like, return_data:dict)
     """
     worker = LMFitWorker(f, t, values, stds, p0, covm=covm, use_covm_W=use_covm_W, **fit_kwargs)
 
