@@ -194,26 +194,26 @@ class LMFitWorker:
             return True, p, None, None, chi2p
         return False, p, l, nu, chi2p
 
-   def do_fit(self, p0=None):
-       if p0 is None:
-           p0 = self.p0
+    def do_fit(self, p0=None):
+        if p0 is None:
+            p0 = self.p0
 
-    update_methods = {1: self.update_method1, 2: self.update_method2, 3: self.update_method3}
-    lambda_initializers = {1: self.lambda_init1, 2: self.lambda_init2, 3: self.lambda_init2}
+        update_methods = {1: self.update_method1, 2: self.update_method2, 3: self.update_method3}
+        lambda_initializers = {1: self.lambda_init1, 2: self.lambda_init2, 3: self.lambda_init2}
 
-    J = jacobian(self.f, self.t, p, self.Delta)
-    l = lambda_initializers[method](self.l0, J)
-    nu = None
-
-    for n in range(nmax):
         J = jacobian(self.f, self.t, p, self.Delta)
+        l = lambda_initializers[method](self.l0, J)
+        nu = None
 
-        do_break, p, l, nu, chi2p = update_methods[method](p, l, nu, J)
-        
-        if(do_break):
-            return p, chi2p, J, True
-        
-    return p, chi2p, J, False
+        for n in range(nmax):
+            J = jacobian(self.f, self.t, p, self.Delta)
+
+            do_break, p, l, nu, chi2p = update_methods[method](p, l, nu, J)
+            
+            if(do_break):
+                return p, chi2p, J, True
+            
+        return p, chi2p, J, False
 
     def estimate_param_covm(self, p):
         return lm_param_covm(jacobian(self.f, self.t, p, self.Delta), self.stds, self.covm)
