@@ -1,5 +1,5 @@
 import numpy as np
-from .statistic import jackknife_std
+from .statistic import jackknife_std, jackknife_cov
 from copy import deepcopy
 
 Default_l0=1e-2
@@ -201,14 +201,15 @@ class LMFitWorker:
         update_methods = {1: self.update_method1, 2: self.update_method2, 3: self.update_method3}
         lambda_initializers = {1: self.lambda_init1, 2: self.lambda_init2, 3: self.lambda_init2}
 
+        p = p0
         J = jacobian(self.f, self.t, p, self.Delta)
-        l = lambda_initializers[method](self.l0, J)
+        l = lambda_initializers[self.method](self.l0, J)
         nu = None
 
-        for n in range(nmax):
+        for n in range(self.nmax):
             J = jacobian(self.f, self.t, p, self.Delta)
 
-            do_break, p, l, nu, chi2p = update_methods[method](p, l, nu, J)
+            do_break, p, l, nu, chi2p = update_methods[self.method](p, l, nu, J)
             
             if(do_break):
                 return p, chi2p, J, True
@@ -227,10 +228,9 @@ class LMFitWorker:
         cpy.values = values
         return cpy
 
-    # FIXME: I should use param covm computed using jackkinife here!
-    def estimate_f_std(self, p, p_std):
-        J = jacobian(self.f, self.t, p, self.Delta),
-        return np.sqrt(np.diag(J @ np.diag(p_std) @ np.transpose(J)))
+    def estimate_f_std(self, p, p_cov):
+        J = jacobian(self.f, self.t, p, self.Delta)
+        return np.sqrt(np.diag(J @ p_cov @ np.transpose(J)))
 
 
 class FittingError(Exception):
@@ -247,7 +247,7 @@ class LMFitter:
 
         if not np.any(np.isfinite(chi2s)):
             raise FittingError("failed to find p0 for which fit converges")
-        return self.p0_guesses(np.argmin(chi2s))
+        return self.p0_guesses[np.argmin(chi2s)]
     
     def get_optimized_worker(self):
         p0 = self.get_p0()
@@ -256,16 +256,20 @@ class LMFitter:
 
 
 class ErrorEstimatingFitter:
-    def __init__(self, worker, statistic, data, jackknife_method=jackknife_std, **kwargs):
+    def __init__(self, worker, statistic, data, jackknife_cov_method=jackknife_cov, **kwargs):
         self.worker = worker
         self.statistic = statistic
         self.data = data
-        self.jackknife_method = jackknife_method
+        self.jackknife_cov_method = jackknife_cov_method
         self.kwargs = kwargs
 
-    # FIXME: I should use param covm computed using jackkinife here!
     def estimate_error(self):
-        def do_fit(self, sample):
+        # FIXME: TODO
+        # One can implement a simple statistical test here to ensure that the
+        # fitter converges to the same value. Assuming one (or more) gaussian
+        # distributions one may try to check the ratio between 1st and 2nd
+        # quantile.
+        def do_fit(sample):
             worker = self.worker.new_from_values(self.statistic(sample))
             p, chi2p, J, success = worker.do_fit()
             if(not success):
@@ -273,10 +277,10 @@ class ErrorEstimatingFitter:
             return p
 
         p, chi2, J, success = self.worker.do_fit()
-        p_std = self.jackknife_method(self.data, do_fit, **kwargs)
-        f_std = self.worker.estimate_f_std(p, p_std)
+        p_cov = self.jackknife_cov_method(self.data, do_fit, **self.kwargs)
+        f_std = self.worker.estimate_f_std(p, p_cov)
 
-        return p_std, f_std
+        return np.sqrt(np.diag(p_cov)), f_std
 
         
 
