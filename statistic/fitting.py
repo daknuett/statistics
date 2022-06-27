@@ -38,16 +38,20 @@ def fit(f, t, values, stds, p0, data=None, statistic=None
             error_estimator = ErrorEstimatingFitter(worker, statistic, data, **jackknife_kwargs)
 
         p_std, f_std = error_estimator.estimate_error()
+        std_estimator = error_estimator.get_std_estimator(p)
     else:
         p_cov = worker.estimate_param_covm(p)
         p_std = np.sqrt(np.diag(p_cov))
         f_std = worker.estimate_output_std(p)
+        std_estimator = worker.get_std_estimator(p)
 
     return_data = {
             "chi2": chi2
             , "J": J
             , "method": worker.method
             , "p0": p0
+            , "f_optimal": lambda t: f(t, p)
+            , "std_estimator": std_estimator
             }
     return p, p_std, f_std, return_data
 

@@ -232,6 +232,9 @@ class LMFitWorker:
         J = jacobian(self.f, self.t, p, self.Delta)
         return np.sqrt(np.diag(J @ p_cov @ np.transpose(J)))
 
+    def get_std_estimator(self, p):
+        return ErrorEstimator(self.f, p, self.Delta, self.estimate_param_covm(p))
+
 
 class FittingError(Exception):
     pass
@@ -262,6 +265,7 @@ class ErrorEstimatingFitter:
         self.data = data
         self.jackknife_cov_method = jackknife_cov_method
         self.kwargs = kwargs
+        self.p_cov = None
 
     def estimate_error(self):
         # FIXME: TODO
@@ -269,19 +273,36 @@ class ErrorEstimatingFitter:
         # fitter converges to the same value. Assuming one (or more) gaussian
         # distributions one may try to check the ratio between 1st and 2nd
         # quantile.
-        def do_fit(sample):
-            worker = self.worker.new_from_values(self.statistic(sample))
-            p, chi2p, J, success = worker.do_fit()
-            if(not success):
-                raise FittingError("fit failed in jackknife")
-            return p
+        if(self.p_cov is None):
+            def do_fit(sample):
+                worker = self.worker.new_from_values(self.statistic(sample))
+                p, chi2p, J, success = worker.do_fit()
+                if(not success):
+                    raise FittingError("fit failed in jackknife")
+                return p
 
-        p, chi2, J, success = self.worker.do_fit()
-        p_cov = self.jackknife_cov_method(self.data, do_fit, **self.kwargs)
-        f_std = self.worker.estimate_f_std(p, p_cov)
+            p, chi2, J, success = self.worker.do_fit()
+            p_cov = self.jackknife_cov_method(self.data, do_fit, **self.kwargs)
+            self.p_cov = p_cov
 
-        return np.sqrt(np.diag(p_cov)), f_std
+        f_std = self.worker.estimate_f_std(p, self.p_cov)
 
+        return np.sqrt(np.diag(self.p_cov)), f_std
+
+    def get_std_estimator(self, p):
+        if(self.p_cov is None):
+            self.estimate_error()
+        return ErrorEstimator(self.f, p, self.worker.Delta, self.p_cov)
         
 
+class ErrorEstimator:
+    def __init__(self, f, p, Delta, p_cov):
+        self.f = f
+        self.p = p
+        self.Delta = Delta
+        self.p_cov = p_cov
 
+    def __call__(self, t):
+        t = np.array(t)
+        J = jacobian(self.f, t, self.p, self.Delta)
+        return np.sqrt(np.diag(J @ self.p_cov @ np.transpose(J)))
