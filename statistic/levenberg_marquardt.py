@@ -220,7 +220,7 @@ class LMFitWorker:
         return lm_param_covm(jacobian(self.f, self.t, p, self.Delta), self.stds, self.covm)
 
     def estimate_output_std(self, p):
-        J = jacobian(self.f, self.t, p, self.Delta),
+        J = jacobian(self.f, self.t, p, self.Delta)
         return np.sqrt(np.diag(J @ lm_param_covm(J, self.stds, self.covm) @ np.transpose(J)))
 
     def new_from_values(self, values):

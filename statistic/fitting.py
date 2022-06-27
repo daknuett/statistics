@@ -1,3 +1,4 @@
+import numpy as np
 from .levenberg_marquardt import LMFitter, LMFitWorker, ErrorEstimatingFitter, FittingError
 
 def fit(f, t, values, stds, p0, data=None, statistic=None
@@ -38,7 +39,7 @@ def fit(f, t, values, stds, p0, data=None, statistic=None
 
         p_std, f_std = error_estimator.estimate_error()
     else:
-        p_cov = worker.estimate_praram_covm(p)
+        p_cov = worker.estimate_param_covm(p)
         p_std = np.sqrt(np.diag(p_cov))
         f_std = worker.estimate_output_std(p)
 
