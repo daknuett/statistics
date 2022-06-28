@@ -3,7 +3,7 @@ from .levenberg_marquardt import LMFitter, LMFitWorker, ErrorEstimatingFitter, F
 
 def fit(f, t, values, stds, p0, data=None, statistic=None
         , jackknife_method=None, p0_guesses=None, covm=None, use_covm_W=False
-        , jackknife_kwargs={}, fit_kwargs={}):
+        , jackknife_kwargs={}, fit_kwargs={}, error_estimating_kwargs={}):
     """
     Perform a Levenberg Marquardt fit minimizing
     
@@ -24,6 +24,9 @@ def fit(f, t, values, stds, p0, data=None, statistic=None
     ``fit_kwargs`` are keyword arguments passed to the ``LMFitWorker``.
     See the docstring of ``LMFitWorker`` for additional info.
 
+    ``error_estimating_kwargs`` are passed to the ``ErrorEstimatingFitter``.
+    See the corresponding docstring.
+
     Returns (p:array_like, p_std:array_like, f_std:array_like,
             return_data:dict)
     """
@@ -42,17 +45,19 @@ def fit(f, t, values, stds, p0, data=None, statistic=None
 
     if data is not None and statistic is not None:
         if jackknife_method is not None:
-            error_estimator = ErrorEstimatingFitter(worker, statistic, data, jackknife_method=jackknife_method, **jackknife_kwargs)
+            error_estimator = ErrorEstimatingFitter(worker, statistic, data, jackknife_method=jackknife_method, jackknife_kwargs=jackknife_kwargs, **error_estimating_kwargs)
         else:
-            error_estimator = ErrorEstimatingFitter(worker, statistic, data, **jackknife_kwargs)
+            error_estimator = ErrorEstimatingFitter(worker, statistic, data, jackknife_kwargs=jackknife_kwargs, **error_estimating_kwargs)
 
         p_std, f_std = error_estimator.estimate_error()
         std_estimator = error_estimator.get_std_estimator(p)
+        jk_samples = error_estimator.jk_samples
     else:
         p_cov = worker.estimate_param_covm(p)
         p_std = np.sqrt(np.diag(p_cov))
         f_std = worker.estimate_output_std(p)
         std_estimator = worker.get_std_estimator(p)
+        jk_samples = None
 
     return_data = {
             "chi2": chi2
@@ -61,6 +66,7 @@ def fit(f, t, values, stds, p0, data=None, statistic=None
             , "p0": p0
             , "f_optimal": lambda t: f(t, p)
             , "std_estimator": std_estimator
+            , "jk_samples": jk_samples
             }
     return p, p_std, f_std, return_data
 

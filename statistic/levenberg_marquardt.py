@@ -1,6 +1,7 @@
 import numpy as np
 from .statistic import jackknife_std, jackknife_cov
 from copy import deepcopy
+from collections import deque
 
 Default_l0=1e-2
 Default_Delta=1e-5
@@ -289,31 +290,58 @@ class LMFitter:
 
 
 class ErrorEstimatingFitter:
-    def __init__(self, worker, statistic, data, jackknife_cov_method=jackknife_cov, **kwargs):
+    """
+    This class estimates the error of a fit using the jackknife resampling
+    method. 
+
+    It takes an ``LMFitWorker`` to do the actual fitting.
+
+    ``data`` is the sample on which ``jackknife_cov_method`` will re-sample.
+
+    The function ``statistic`` is invoked on every jackknife sample before the
+    worker performs the fit.
+
+    ``jackknife_kwargs`` is passed to ``jackknife_cov_method`` as keyword arguments.
+
+    If ``collect_jk_samples is True`` the results of the worker for every
+    jackknife sample is recorded and stored in ``self.jk_samples``.
+    """
+    def __init__(self, worker, statistic, data, jackknife_cov_method=jackknife_cov, collect_jk_samples=False, jackknife_kwargs={}):
         self.worker = worker
         self.statistic = statistic
         self.data = data
         self.jackknife_cov_method = jackknife_cov_method
-        self.kwargs = kwargs
+        self.jackknife_kwargs = jackknife_kwargs
         self.p_cov = None
+        self.jk_samples = None
+        self.collect_jk_samples = collect_jk_samples
 
     def estimate_error(self):
+        """
+        Returns ``p_std, f_std``.
+        """
         # FIXME: TODO
         # One can implement a simple statistical test here to ensure that the
         # fitter converges to the same value. Assuming one (or more) gaussian
         # distributions one may try to check the ratio between 1st and 2nd
         # quantile.
         if(self.p_cov is None):
+            if(self.collect_jk_samples):
+                self.jk_samples = deque()
             def do_fit(sample):
                 worker = self.worker.new_from_values(self.statistic(sample))
                 p, chi2p, J, success = worker.do_fit()
                 if(not success):
                     raise FittingError("fit failed in jackknife")
+                if(self.collect_jk_samples):
+                    self.jk_samples.append(p)
                 return p
 
             p, chi2, J, success = self.worker.do_fit()
-            p_cov = self.jackknife_cov_method(self.data, do_fit, **self.kwargs)
+            p_cov = self.jackknife_cov_method(self.data, do_fit, **self.jackknife_kwargs)
             self.p_cov = p_cov
+            if(self.collect_jk_samples):
+                self.jk_samples = np.array(self.jk_samples)
 
         f_std = self.worker.estimate_f_std(p, self.p_cov)
 
