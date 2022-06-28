@@ -12,7 +12,7 @@ Default_eps3=1e-1
 Default_eps4=1e-1
 Default_Lup=11
 Default_Ldown=9
-Default_method=1
+Default_method=3
 
 def jacobian(y, t, p, Delta):
     def partialdiff(p, Delta, j, t):
