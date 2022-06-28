@@ -52,8 +52,14 @@ class LMFitWorker:
     instabilities.
 
     ``method`` can be 1, 2, or 3. It changes the used minimizer.
+
+    If ``jacobian_method is not None`` it will be used for the minimization.
+    A check against the numerical computation of the jacobian is performed,
+    note that this is only a sanity check.
+    In the other case the jacobian is computed numerically.
     """
     def __init__(self, f, t, values, stds, p0
+                , jacobian_method=None
                 , covm=None, use_covm_W=False
                 , l0=Default_l0, Delta=Default_Delta
                 , nmax=Default_nmax, eps1=Default_eps1, eps2=Default_eps2, eps3=Default_eps3, eps4=Default_eps4
@@ -78,6 +84,15 @@ class LMFitWorker:
         self.Lup = Lup
         self.Ldown = Ldown
         self.method = method
+
+        if(jacobian_method is not None):
+            J_numerical = jacobian(self.f, self.t, self.p0, self.Delta)
+            J_analytical = jacobian_method(self,t, self.p0)
+            if(not np.allclose(J_numerical, J_analytical, atol=self.Delta*100)):
+                raise ValueError("found that given analytical jacobian does"
+                        "not match numerically calculated jacobian"
+                        f"(atol={self.Delta*100:.2e})")
+        self.jacobian_method = jacobian_method
 
         if(covm is not None and use_covm_W):
             self.W = np.linalg.inv(covm)
@@ -181,7 +196,6 @@ class LMFitWorker:
         
         
         rho = (chi2p - chi2ph) / (np.transpose(h) @ (l * h + u))
-        
         if(rho > self.eps4):
             p = p + h
             l = max(1/3, 1 - (2*rho - 1)**3)
@@ -202,12 +216,18 @@ class LMFitWorker:
         lambda_initializers = {1: self.lambda_init1, 2: self.lambda_init2, 3: self.lambda_init2}
 
         p = p0
-        J = jacobian(self.f, self.t, p, self.Delta)
+        if(self.jacobian_method is None):
+            J = jacobian(self.f, self.t, p, self.Delta)
+        else:
+            J = self.jacobian_method(self.t, p)
         l = lambda_initializers[self.method](self.l0, J)
         nu = None
 
         for n in range(self.nmax):
-            J = jacobian(self.f, self.t, p, self.Delta)
+            if(self.jacobian_method is None):
+                J = jacobian(self.f, self.t, p, self.Delta)
+            else:
+                J = self.jacobian_method(self.t, p)
 
             do_break, p, l, nu, chi2p = update_methods[self.method](p, l, nu, J)
             
@@ -217,10 +237,17 @@ class LMFitWorker:
         return p, chi2p, J, False
 
     def estimate_param_covm(self, p):
-        return lm_param_covm(jacobian(self.f, self.t, p, self.Delta), self.stds, self.covm)
+        if(self.jacobian_method is None):
+            J = jacobian(self.f, self.t, p, self.Delta)
+        else:
+            J = self.jacobian_method(self.t, p)
+        return lm_param_covm(J, self.stds, self.covm)
 
     def estimate_output_std(self, p):
-        J = jacobian(self.f, self.t, p, self.Delta)
+        if(self.jacobian_method is None):
+            J = jacobian(self.f, self.t, p, self.Delta)
+        else:
+            J = self.jacobian_method(self.t, p)
         return np.sqrt(np.diag(J @ lm_param_covm(J, self.stds, self.covm) @ np.transpose(J)))
 
     def new_from_values(self, values):
@@ -229,7 +256,10 @@ class LMFitWorker:
         return cpy
 
     def estimate_f_std(self, p, p_cov):
-        J = jacobian(self.f, self.t, p, self.Delta)
+        if(self.jacobian_method is None):
+            J = jacobian(self.f, self.t, p, self.Delta)
+        else:
+            J = self.jacobian_method(self.t, p)
         return np.sqrt(np.diag(J @ p_cov @ np.transpose(J)))
 
     def get_std_estimator(self, p):
@@ -292,17 +322,21 @@ class ErrorEstimatingFitter:
     def get_std_estimator(self, p):
         if(self.p_cov is None):
             self.estimate_error()
-        return ErrorEstimator(self.f, p, self.worker.Delta, self.p_cov)
+        return ErrorEstimator(self.f, p, self.worker.Delta, self.p_cov, jacobian_method=self.worker.jacobian_method)
         
 
 class ErrorEstimator:
-    def __init__(self, f, p, Delta, p_cov):
+    def __init__(self, f, p, Delta, p_cov, jacobian_method=None):
         self.f = f
         self.p = p
         self.Delta = Delta
         self.p_cov = p_cov
+        self.jacobian_method = jacobian_method
 
     def __call__(self, t):
         t = np.array(t)
-        J = jacobian(self.f, t, self.p, self.Delta)
+        if(self.jacobian_method is None):
+            J = jacobian(self.f, t, self.p, self.Delta)
+        else:
+            J = self.jacobian_method(t, self.p)
         return np.sqrt(np.diag(J @ self.p_cov @ np.transpose(J)))

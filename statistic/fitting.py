@@ -10,13 +10,22 @@ def fit(f, t, values, stds, p0, data=None, statistic=None
     ..math::
         (f(t, p) - values) \sigma^{-1} (f(t, p) - values)
 
-    where sigma is either ``diag(stds)`` or ``covm`` (if ``covm is not None and use_covm_W is True``).
+    where sigma is either ``diag(stds)`` or ``covm`` (if ``covm is not None and
+            use_covm_W is True``).
 
-    If ``p0_guesses is not None`` first an opimal ``p0`` is searched and ``p0`` is ignored.
-    If ``data is not None and statistic is not None`` the error is estimated using ``jackknife_method``.
-    Else the error is estimated using some error propagation.
+    If ``p0_guesses is not None`` first an opimal ``p0`` is searched and ``p0``
+    is ignored. If ``data is not None and statistic is not None`` the error is
+    estimated using ``jackknife_method``. Else the error is estimated using
+    some error propagation.
 
-    Returns (p:array_like, p_std:array_like, f_std:array_like, return_data:dict)
+    ``jackknife_kwargs`` are keyword arguments passed to ``jackknife_method``
+    (if present).
+
+    ``fit_kwargs`` are keyword arguments passed to the ``LMFitWorker``.
+    See the docstring of ``LMFitWorker`` for additional info.
+
+    Returns (p:array_like, p_std:array_like, f_std:array_like,
+            return_data:dict)
     """
     worker = LMFitWorker(f, t, values, stds, p0, covm=covm, use_covm_W=use_covm_W, **fit_kwargs)
 
