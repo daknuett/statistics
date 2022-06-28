@@ -87,7 +87,7 @@ class LMFitWorker:
 
         if(jacobian_method is not None):
             J_numerical = jacobian(self.f, self.t, self.p0, self.Delta)
-            J_analytical = jacobian_method(self,t, self.p0)
+            J_analytical = jacobian_method(self.t, self.p0)
             if(not np.allclose(J_numerical, J_analytical, atol=self.Delta*100)):
                 raise ValueError("found that given analytical jacobian does"
                         "not match numerically calculated jacobian"
@@ -322,7 +322,7 @@ class ErrorEstimatingFitter:
     def get_std_estimator(self, p):
         if(self.p_cov is None):
             self.estimate_error()
-        return ErrorEstimator(self.f, p, self.worker.Delta, self.p_cov, jacobian_method=self.worker.jacobian_method)
+        return ErrorEstimator(self.worker.f, p, self.worker.Delta, self.p_cov, jacobian_method=self.worker.jacobian_method)
         
 
 class ErrorEstimator:
