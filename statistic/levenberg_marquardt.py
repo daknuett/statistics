@@ -147,7 +147,7 @@ class LMFitWorker:
             return True, p, None, None, chi2p
         
         if(chi2p / (np.size(self.values) - np.size(p) + 1) < self.eps3):
-            return True, p, None, chi2p
+            return True, p, None, None, chi2p
         
         V = np.transpose(J) @ self.W @ J
         A = V + l*np.diag(np.ones_like(np.diag(V)))
@@ -183,7 +183,7 @@ class LMFitWorker:
             return True, p, None, None, chi2p
         
         if(chi2p / (np.size(self.values) - np.size(p) + 1) < self.eps3):
-            return True, p, None, chi2p
+            return True, p, None, None, chi2p
         
         V = np.transpose(J) @ self.W @ J
         A = V + l*np.diag(np.ones_like(np.diag(V)))
