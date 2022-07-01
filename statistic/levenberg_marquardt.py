@@ -134,7 +134,7 @@ class LMFitWorker:
             l = max(l / self.Ldown, 1e-7)
         else:
             l = min(l * self.Lup, 1e7)
-        if(np.max(h / p) < self.eps2):
+        if(np.max(np.abs(h / p)) < self.eps2):
             return True, p, None, None, chi2p
         return False, p, l, None, chi2p
 
@@ -170,7 +170,7 @@ class LMFitWorker:
         else:
             l = l + np.abs(chi2pah - chi2p) / (2 * alpha)
             
-        if(np.max(h / p) < self.eps2):
+        if(np.max(np.abs(h / p)) < self.eps2):
             return True, p, None, None, chi2p
         return False, p, l, None, chi2p
 
@@ -205,7 +205,7 @@ class LMFitWorker:
             l = l * nu
             nu *= 2
                 
-        if(np.max(h / p) < self.eps2):
+        if(np.max(np.abs(h / p)) < self.eps2):
             return True, p, None, None, chi2p
         return False, p, l, nu, chi2p
 
