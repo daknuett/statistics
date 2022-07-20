@@ -222,7 +222,7 @@ class LMFitWorker:
         else:
             J = self.jacobian_method(self.t, p)
         l = lambda_initializers[self.method](self.l0, J)
-        nu = None
+        nu = 2
 
         for n in range(self.nmax):
             if(self.jacobian_method is None):
