@@ -233,9 +233,9 @@ class LMFitWorker:
             do_break, p, l, nu, chi2p = update_methods[self.method](p, l, nu, J)
             
             if(do_break):
-                return p, chi2p, J, True
+                return p, chi2p, J, True, n
             
-        return p, chi2p, J, False
+        return p, chi2p, J, False, n
 
     def estimate_param_covm(self, p):
         if(self.jacobian_method is None):
@@ -330,14 +330,14 @@ class ErrorEstimatingFitter:
                 self.jk_samples = deque()
             def do_fit(sample):
                 worker = self.worker.new_from_values(self.statistic(sample))
-                p, chi2p, J, success = worker.do_fit()
+                p, chi2p, J, success, n = worker.do_fit()
                 if(not success):
                     raise FittingError("fit failed in jackknife")
                 if(self.collect_jk_samples):
                     self.jk_samples.append(p)
                 return p
 
-            p, chi2, J, success = self.worker.do_fit()
+            p, chi2, J, success, n = self.worker.do_fit()
             p_cov = self.jackknife_cov_method(self.data, do_fit, **self.jackknife_kwargs)
             self.p_cov = p_cov
             if(self.collect_jk_samples):

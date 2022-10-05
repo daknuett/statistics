@@ -38,7 +38,7 @@ def fit(f, t, values, stds, p0, data=None, statistic=None
         p0 = fitter.get_p0()
 
     
-    p, chi2, J, success = worker.do_fit()
+    p, chi2, J, success, n = worker.do_fit()
 
     if not success:
         raise FittingError("fitter did not converge")
@@ -67,6 +67,8 @@ def fit(f, t, values, stds, p0, data=None, statistic=None
             , "f_optimal": lambda t: f(t, p)
             , "std_estimator": std_estimator
             , "jk_samples": jk_samples
+            , "nmax": worker.nmax
+            , "n": n
             }
     return p, p_std, f_std, return_data
 
