@@ -2,6 +2,15 @@ import numpy as np
 
 def _error_format(value, error):
     precision = np.floor(np.log10(error)).astype(int)
+    if(precision >= 0):
+        scale = precision + 1
+        value = value / 10.**scale
+        error = error / 10.**scale
+        precision = np.floor(np.log10(error)).astype(int)
+        print(precision)
+    else: 
+        scale = None
+
     aprec = np.abs(precision)
     
     digits_before_decimal = np.log10(np.abs(value))
@@ -19,13 +28,11 @@ def _error_format(value, error):
     
     rounded_value = rounded_at_precision_value * 10.**(-aprec - 1)
     
-    if(precision < 0):
+    if scale is None:
         f_string = "{rounded_value:" f".{np.abs(precision) + 1}f" "}({rounded_at_precision_error})"
         return f_string.format(**locals())
     else:
-        scale = precision + 1
-        rounded_value_rescaled = rounded_value / 10.**scale
-        f_string = "({rounded_value_rescaled:" f".{np.abs(precision) + 1 + scale}f" "}({rounded_at_precision_error}))"
+        f_string = "({rounded_value:" f".{np.abs(precision) + 1}f" "}({rounded_at_precision_error}))"
         exp_string = r"\times 10^{" f"{scale}" "}"
         return f_string.format(**locals()) + exp_string
 
