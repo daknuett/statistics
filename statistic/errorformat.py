@@ -7,7 +7,6 @@ def _error_format(value, error):
         value = value / 10.**scale
         error = error / 10.**scale
         precision = np.floor(np.log10(error)).astype(int)
-        print(precision)
     else: 
         scale = None
 
