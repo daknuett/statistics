@@ -110,7 +110,6 @@ class LMFitWorker:
         return lnot
 
     def lambda_init2(self, lnot, J):
-        print(J.shape, self.W.shape)
         return lnot * np.max(np.diag(np.transpose(J) @ self.W @ J))
 
     def update_method1(self, p, l, nu, J):
