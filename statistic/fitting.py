@@ -61,9 +61,9 @@ def fit(f, t, values, stds, p0, data=None, statistic=None
 
     if data is not None and statistic is not None:
         if jackknife_method is not None:
-            error_estimator = ErrorEstimatingFitter(worker, statistic, data, jackknife_method=jackknife_method, jackknife_kwargs=jackknife_kwargs, **error_estimating_kwargs)
+            error_estimator = ErrorEstimatingFitter(worker.new_with_p0(p), statistic, data, jackknife_method=jackknife_method, jackknife_kwargs=jackknife_kwargs, **error_estimating_kwargs)
         else:
-            error_estimator = ErrorEstimatingFitter(worker, statistic, data, jackknife_kwargs=jackknife_kwargs, **error_estimating_kwargs)
+            error_estimator = ErrorEstimatingFitter(worker.new_with_p0(p), statistic, data, jackknife_kwargs=jackknife_kwargs, **error_estimating_kwargs)
 
         p_std, f_std = error_estimator.estimate_error()
         std_estimator = error_estimator.get_std_estimator(p)

@@ -2,6 +2,7 @@ import numpy as np
 from .statistic import jackknife_std, jackknife_cov
 from copy import deepcopy
 from collections import deque
+import copy
 
 Default_l0=1e-2
 Default_Delta=1e-5
@@ -99,6 +100,11 @@ class LMFitWorker:
             self.W = np.linalg.inv(covm)
         else:
             self.W = np.diag(1 / stds**2)
+
+    def new_with_p0(self, p0):
+        worker = copy.copy(self)
+        worker.p0 = p0
+        return worker
 
     def lambda_init1(self, lnot, J):
         return lnot
