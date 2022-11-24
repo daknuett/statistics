@@ -3,6 +3,7 @@ from .levenberg_marquardt import LMFitter, LMFitWorker, ErrorEstimatingFitter, F
 
 def fit(f, t, values, stds, p0, data=None, statistic=None
         , jackknife_method=None, p0_guesses=None, covm=None, use_covm_W=False
+        , accept_noconvergence=False
         , jackknife_kwargs={}, fit_kwargs={}, error_estimating_kwargs={}):
     """
     Perform a Levenberg Marquardt fit minimizing
@@ -40,8 +41,23 @@ def fit(f, t, values, stds, p0, data=None, statistic=None
     
     p, chi2, J, success, n = worker.do_fit()
 
-    if not success:
+    if not success and not accept_noconvergence:
         raise FittingError("fitter did not converge")
+
+    if(not success and accept_noconvergence):
+        return_data = {
+                "chi2": chi2
+                , "J": J
+                , "method": worker.method
+                , "p0": p0
+                , "f_optimal": None
+                , "std_estimator": None
+                , "jk_samples": None
+                , "nmax": worker.nmax
+                , "n": n
+            }
+        return p, None, None, return_data
+
 
     if data is not None and statistic is not None:
         if jackknife_method is not None:
