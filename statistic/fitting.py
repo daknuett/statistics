@@ -3,6 +3,7 @@ from .levenberg_marquardt import LMFitter, LMFitWorker, ErrorEstimatingFitter, F
 
 def fit(f, t, values, stds, p0, data=None, statistic=None
         , jackknife_method=None, p0_guesses=None, covm=None, use_covm_W=False
+        , jk_use_central_result=True
         , accept_noconvergence=False
         , jackknife_kwargs={}, fit_kwargs={}, error_estimating_kwargs={}):
     """
@@ -59,11 +60,15 @@ def fit(f, t, values, stds, p0, data=None, statistic=None
         return p, None, None, return_data
 
 
+    jack_p0 = p0
+    if(jk_use_central_result):
+        jack_p0 = p 
+    
     if data is not None and statistic is not None:
         if jackknife_method is not None:
-            error_estimator = ErrorEstimatingFitter(worker.new_with_p0(p), statistic, data, jackknife_method=jackknife_method, jackknife_kwargs=jackknife_kwargs, **error_estimating_kwargs)
+            error_estimator = ErrorEstimatingFitter(worker.new_with_p0(jack_p0), statistic, data, jackknife_method=jackknife_method, jackknife_kwargs=jackknife_kwargs, **error_estimating_kwargs)
         else:
-            error_estimator = ErrorEstimatingFitter(worker.new_with_p0(p), statistic, data, jackknife_kwargs=jackknife_kwargs, **error_estimating_kwargs)
+            error_estimator = ErrorEstimatingFitter(worker.new_with_p0(jack_p0), statistic, data, jackknife_kwargs=jackknife_kwargs, **error_estimating_kwargs)
 
         p_std, f_std = error_estimator.estimate_error()
         std_estimator = error_estimator.get_std_estimator(p)
@@ -85,6 +90,7 @@ def fit(f, t, values, stds, p0, data=None, statistic=None
             , "jk_samples": jk_samples
             , "nmax": worker.nmax
             , "n": n
+            , "jack_p0": jack_p0
             }
     return p, p_std, f_std, return_data
 
