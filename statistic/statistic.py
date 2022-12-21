@@ -168,13 +168,14 @@ def jackknife_cov(corrf, statistic, *params, data_axis=1, statistic_axis=0, cov_
         return np.sum(jackknife_cov_samples, axis=statistic_axis + 2) * (N - 1) / N 
 
     jackknife_samples = np.array([
-        statistic((xbar + eps*(xbar - corrf[slc(i)])) / (N - 1), *params) - fmean for i in range(N)
+        statistic(xbar + eps*(xbar - corrf[slc(i)]) / (N - 1), *params) - fmean for i in range(N)
     ])
 
     
     def slc(i):
         lst = [slice(None, None, None)]*(1 + cov_axis)
         return tuple(lst + [i])
+
     jackknife_cov_samples = np.array([[
         jackknife_samples[slc(i)] * jackknife_samples[slc(k)] for i in range(jackknife_samples.shape[1 + cov_axis])]
         for k in range(jackknife_samples.shape[1 + cov_axis])
