@@ -138,7 +138,7 @@ def jackknife2_std(data, statistic, *params, data_axis=1, statistic_axis=0, mask
 
     return np.sqrt(np.sum((jackknife_samples - jackmean)**2, axis=statistic_axis) * (N - 1) / N)
 
-def jackknife_cov(corrf, statistic, *params, data_axis=1, statistic_axis=0, cov_axis=0):
+def jackknife_cov(corrf, statistic, *params, data_axis=1, statistic_axis=0, cov_axis=0, eps=None):
     N = corrf.shape[data_axis]
     xbar = np.average(corrf, axis=data_axis)
     fmean = statistic(xbar, *params)
@@ -151,8 +151,24 @@ def jackknife_cov(corrf, statistic, *params, data_axis=1, statistic_axis=0, cov_
             lst = [slice(None, None, None)]*data_axis
             return tuple(lst + [i])
 
+    if (eps is None):
+        jackknife_samples = np.array([
+            statistic((N*xbar - corrf[slc(i)]) / (N - 1), *params) - fmean for i in range(N)
+        ])
+
+        
+        def slc(i):
+            lst = [slice(None, None, None)]*(1 + cov_axis)
+            return tuple(lst + [i])
+        jackknife_cov_samples = np.array([[
+            jackknife_samples[slc(i)] * jackknife_samples[slc(k)] for i in range(jackknife_samples.shape[1 + cov_axis])]
+            for k in range(jackknife_samples.shape[1 + cov_axis])
+        ])
+
+        return np.sum(jackknife_cov_samples, axis=statistic_axis + 2) * (N - 1) / N 
+
     jackknife_samples = np.array([
-        statistic((N*xbar - corrf[slc(i)]) / (N - 1), *params) - fmean for i in range(N)
+        statistic((xbar + eps*(xbar - corrf[slc(i)])) / (N - 1), *params) - fmean for i in range(N)
     ])
 
     
@@ -164,7 +180,7 @@ def jackknife_cov(corrf, statistic, *params, data_axis=1, statistic_axis=0, cov_
         for k in range(jackknife_samples.shape[1 + cov_axis])
     ])
 
-    return np.sum(jackknife_cov_samples, axis=statistic_axis + 2) * (N - 1) / N 
+    return np.sum(jackknife_cov_samples, axis=statistic_axis + 2) * (N - 1) / N / eps**2
 
 
 def jackknife2_cov(corrf, statistic, *params, data_axis=1, statistic_axis=0, cov_axis=0, masked_ok=True):
