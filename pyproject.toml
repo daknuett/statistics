@@ -1,0 +1,19 @@
+[project]
+name="statistic"
+authors = [
+    {name="Daniel Knüttel", email="daniel.knuettel@physik.uni-regensburg.de"}
+]
+description = "Private library of statistics utilities"
+requires-python=">=3.4"
+readme="README.rst"
+dependencies=['numpy']
+
+version="0.0.1"
+
+[project.urls]
+repository="https://github.com/daknuett/statistics"
+homepage="https://github.com/daknuett/statistics"
+
+[build-system]
+requires = ["meson", "toml", "numpy", "ninja", "meson-python"]
+build-backend = 'mesonpy'
