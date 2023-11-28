@@ -25,7 +25,7 @@ def jacobian(y, t, p, Delta):
         
         return (y(t, pforward) - y(t, pbackward)) / (2 * magn)
     
-    J = np.array([[partialdiff(p, Delta, j, ti) for j in range(p.size)] for ti in t])
+    J = np.array([partialdiff(p, Delta, j, t) for j in range(p.size)]).T
     return J
 
 def lm_param_covm(J, stds, covm):
